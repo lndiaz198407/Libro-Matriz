@@ -102,6 +102,21 @@ const REGISTROS_POR_PAGINA = 10;
  */
 let ordenAscendente = true;
 
+/**
+ * Controla la dirección del ordenamiento por folio.
+ * - true  → próximo clic ordenará ascendente (menor a mayor)
+ * - false → próximo clic ordenará descendente (mayor a menor)
+ * @type {boolean}
+ */
+let ordenFolioAscendente = true;
+
+/**
+ * Registra cuál fue el último criterio de ordenamiento aplicado.
+ * Valores posibles: 'apellido' | 'folio' | null
+ * @type {string|null}
+ */
+let ultimoOrden = null;
+
 
 /* ============================================================================
    FUNCIÓN: normalizar()
@@ -238,6 +253,18 @@ function buscarEnSheets() {
 
             // --- 5 y 6. Reiniciar página y renderizar resultados ---
             paginaActual = 1;
+            ultimoOrden = null; // Reinicia el estado de orden al hacer nueva búsqueda
+            actualizarEstadoBotoresOrden();
+            // Mostrar barra de ordenamiento si hay búsqueda activa (texto o libro específico)
+            const busquedaActiva = textoBusqueda.trim() !== '' || libroFiltro !== '';
+            const barraOrden = document.getElementById('barra-ordenamiento');
+            if (barraOrden) {
+                if (busquedaActiva && listaCompletaFiltrada.length > 1) {
+                    barraOrden.classList.add('visible');
+                } else {
+                    barraOrden.classList.remove('visible');
+                }
+            }
             actualizarVista();
         })
         .catch(error => {
@@ -273,37 +300,96 @@ function ordenarPorApellido() {
     // No hace nada si no hay datos para ordenar
     if (listaCompletaFiltrada.length === 0) return;
 
-    /**
-     * Array.sort() ordena el array IN PLACE (modifica el array original).
-     * La función comparadora recibe dos elementos (a, b) y debe retornar:
-     *  - número negativo si 'a' debe ir ANTES que 'b'
-     *  - número positivo si 'a' debe ir DESPUÉS que 'b'
-     *  - 0 si son iguales
-     * 
-     * Normalizamos ambos nombres antes de comparar para que la ñ, los
-     * acentos, etc. no interfieran con el orden correcto.
-     */
     listaCompletaFiltrada.sort((filaA, filaB) => {
-        const nombreA = normalizar(filaA[1]); // Nombre del alumno A
-        const nombreB = normalizar(filaB[1]); // Nombre del alumno B
+        const nombreA = normalizar(filaA[1]);
+        const nombreB = normalizar(filaB[1]);
 
         if (nombreA < nombreB) return ordenAscendente ? -1 : 1;
         if (nombreA > nombreB) return ordenAscendente ? 1 : -1;
-        return 0; // Son iguales: no cambian de posición
+        return 0;
     });
 
-    // Actualiza el ícono de la columna para mostrar la dirección del orden actual
+    // Actualiza el ícono de la columna de la tabla
     const iconoOrden = document.getElementById('iconoOrden');
     if (iconoOrden) {
         iconoOrden.innerText = ordenAscendente ? "▲" : "▼";
     }
 
-    // Invierte el flag para que el próximo clic ordene en dirección contraria
-    ordenAscendente = !ordenAscendente;
+    // Actualiza el botón de la barra de ordenamiento
+    const btnApellido = document.getElementById('btnOrdenApellido');
+    if (btnApellido) {
+        btnApellido.textContent = `Apellido ${ordenAscendente ? '▲' : '▼'}`;
+    }
 
-    // Volvemos a la primera página para mostrar el inicio de la lista ordenada
+    ordenAscendente = !ordenAscendente;
+    ultimoOrden = 'apellido';
+    actualizarEstadoBotoresOrden();
+
     paginaActual = 1;
     actualizarVista();
+}
+
+
+/* ============================================================================
+   FUNCIÓN: ordenarPorFolio()
+   ============================================================================
+   Ordena numéricamente el array listaCompletaFiltrada por el campo
+   "Número de Folio" (columna E, índice 4 del array de cada fila).
+   
+   Alterna entre orden ascendente (menor a mayor) y descendente cada clic.
+   Actualiza el ícono de la columna en la tabla y el botón de la barra.
+============================================================================ */
+function ordenarPorFolio() {
+    if (listaCompletaFiltrada.length === 0) return;
+
+    listaCompletaFiltrada.sort((filaA, filaB) => {
+        // Convertimos a número para orden numérico correcto (no lexicográfico)
+        const folioA = parseFloat(filaA[4]) || 0;
+        const folioB = parseFloat(filaB[4]) || 0;
+
+        return ordenFolioAscendente ? folioA - folioB : folioB - folioA;
+    });
+
+    // Actualiza el ícono de la columna en la tabla de escritorio
+    const iconoFolio = document.getElementById('iconoOrdenFolio');
+    if (iconoFolio) {
+        iconoFolio.innerText = ordenFolioAscendente ? "▲" : "▼";
+    }
+
+    // Actualiza el botón en la barra de ordenamiento
+    const btnFolio = document.getElementById('btnOrdenFolio');
+    if (btnFolio) {
+        btnFolio.textContent = `Folio ${ordenFolioAscendente ? '▲' : '▼'}`;
+    }
+
+    ordenFolioAscendente = !ordenFolioAscendente;
+    ultimoOrden = 'folio';
+    actualizarEstadoBotoresOrden();
+
+    paginaActual = 1;
+    actualizarVista();
+}
+
+
+/* ============================================================================
+   FUNCIÓN: actualizarEstadoBotoresOrden()
+   ============================================================================
+   Marca visualmente con la clase 'activo' el botón de ordenamiento
+   que fue usado por última vez, y quita esa clase del otro.
+============================================================================ */
+function actualizarEstadoBotoresOrden() {
+    const btnApellido = document.getElementById('btnOrdenApellido');
+    const btnFolio    = document.getElementById('btnOrdenFolio');
+
+    if (btnApellido) btnApellido.classList.toggle('activo', ultimoOrden === 'apellido');
+    if (btnFolio)    btnFolio.classList.toggle('activo',    ultimoOrden === 'folio');
+
+    // Sincroniza también el ícono del encabezado de tabla cuando no se usó ese criterio
+    const iconoOrden = document.getElementById('iconoOrden');
+    if (iconoOrden && ultimoOrden !== 'apellido') iconoOrden.innerText = '↕';
+
+    const iconoFolio = document.getElementById('iconoOrdenFolio');
+    if (iconoFolio && ultimoOrden !== 'folio') iconoFolio.innerText = '↕';
 }
 
 

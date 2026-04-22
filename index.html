@@ -217,6 +217,23 @@
                     </button>
                 </div>
 
+                <!--
+                    Barra de ordenamiento condicional.
+                    Solo visible cuando el usuario ha realizado una búsqueda activa
+                    (por nombre/DNI o por libro específico). Se muestra/oculta desde JS
+                    mediante la clase 'visible'. En escritorio complementa la columna
+                    ordenable de la tabla; en móvil es la única forma de ordenar.
+                -->
+<!--                 <div id="barra-ordenamiento" class="barra-ordenamiento">
+                    <span>Ordenar por:</span>
+                    <button onclick="ordenarPorApellido()" class="btn-ordenar" id="btnOrdenApellido">
+                        Apellido ↕
+                    </button>
+                    <button onclick="ordenarPorFolio()" class="btn-ordenar" id="btnOrdenFolio">
+                        Folio ↕
+                    </button>
+                </div> -->
+
                 <!-- TABLA: visible en computadoras/tablets -->
                 <div class="tabla-envolvente">
                     <table class="tabla-datos">
@@ -233,7 +250,9 @@
                                     Apellido y Nombre <span id="iconoOrden">↕</span>
                                 </th>
                                 <th class="col-libro">Libro</th>
-                                <th class="col-folio">Folio</th>
+                                <th onclick="ordenarPorFolio()" class="col-folio columna-ordenable" title="Clic para ordenar por número de folio">
+                                    Folio <span id="iconoOrdenFolio">↕</span>
+                                </th>
                                 <th class="col-accion">Acción</th>
                             </tr>
                         </thead>
