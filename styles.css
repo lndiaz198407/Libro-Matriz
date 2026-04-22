@@ -1,0 +1,865 @@
+/*
+================================================================================
+  styles.css — Hoja de estilos principal del Sistema Libro Matriz
+================================================================================
+  Autor: Diaz Luis
+  Descripción: Estilos para el sistema de consulta de registros escolares.
+  
+  ESTRUCTURA DEL ARCHIVO:
+  1.  Variables globales (colores, tipografía, sombras, bordes)
+  2.  Reset y estilos base del <body>
+  3.  Firma del autor
+  4.  Pantalla de login
+  5.  Cabecera del sistema
+  6.  Panel de búsqueda
+  7.  Indicador de carga
+  8.  Sección de resultados (barra, tabla, tarjetas)
+  9.  Paginación
+  10. Clases de utilidad (.oculto, .visible)
+  11. Media queries (diseño responsive para celulares)
+  12. Animaciones (@keyframes)
+================================================================================
+*/
+
+
+/* ============================================================================
+   1. VARIABLES GLOBALES
+   ============================================================================
+   Las variables CSS (custom properties) permiten centralizar los valores
+   de diseño. Si necesitás cambiar el color principal de toda la app,
+   solo modificás --color-principal aquí y se actualiza en todos lados.
+   
+   Se definen en :root para que estén disponibles en TODA la página.
+============================================================================ */
+:root {
+    /* --- Paleta de colores principal --- */
+    --color-principal:    #1a365d;   /* Azul marino oscuro: color base de la marca */
+    --color-acento:       #2b6cb0;   /* Azul medio: botones, links activos */
+    --color-acento-suave: #ebf4ff;   /* Azul muy claro: fondos de hover y badges */
+    --color-exito:        #276749;   /* Verde oscuro: estado positivo */
+    --color-peligro:      #c53030;   /* Rojo: errores y advertencias */
+    --color-texto:        #1a202c;   /* Casi negro: texto principal */
+    --color-texto-suave:  #4a5568;   /* Gris oscuro: texto secundario */
+    --color-borde:        #e2e8f0;   /* Gris claro: bordes de tarjetas y separadores */
+    --color-fondo:        #f0f4f8;   /* Fondo gris azulado de la página */
+    --color-blanco:       #ffffff;
+
+    /* --- Tipografía --- */
+    --fuente-titulo: 'DM Serif Display', Georgia, serif;  /* Para encabezados elegantes */
+    --fuente-cuerpo: 'DM Sans', 'Segoe UI', sans-serif;   /* Para el texto general */
+
+    /* --- Sombras --- */
+    --sombra-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --sombra-md:  0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+    --sombra-lg:  0 10px 25px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.06);
+    --sombra-xl:  0 20px 40px rgba(26,54,93,0.2);
+
+    /* --- Bordes --- */
+    --radio-sm: 8px;    /* Esquinas ligeramente redondeadas */
+    --radio-md: 12px;   /* Esquinas moderadamente redondeadas */
+    --radio-lg: 20px;   /* Esquinas muy redondeadas (tarjetas) */
+    --radio-pill: 50px; /* Forma de píldora (badges, botones redondos) */
+
+    /* --- Transiciones --- */
+    --transicion: all 0.25s ease; /* Duración y curva estándar para animaciones de hover */
+}
+
+
+/* ============================================================================
+   2. RESET Y ESTILOS BASE
+   ============================================================================
+   Establece el estilo general de la página entera.
+============================================================================ */
+*,
+*::before,
+*::after {
+    /* 
+       box-sizing: border-box hace que el padding y el border se incluyan
+       en el width/height declarado del elemento. Evita muchos errores de layout.
+    */
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--fuente-cuerpo);
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
+    line-height: 1.6;          /* Espaciado entre líneas para mejor legibilidad */
+    min-height: 100vh;         /* La página ocupa al menos toda la altura de la pantalla */
+    padding-bottom: 80px;      /* Espacio al final para que el contenido no tape la firma */
+}
+
+/* Oculta el sistema completo hasta que el usuario ingrese la contraseña correcta */
+#seccion-sistema {
+    display: none;
+}
+
+
+/* ============================================================================
+   3. FIRMA DEL AUTOR
+   ============================================================================
+   Pequeño texto fijo en la esquina inferior derecha de la pantalla.
+   z-index: 1000 garantiza que siempre esté por encima de otros elementos.
+============================================================================ */
+.firma-autor {
+    position: fixed;       /* Se queda en su lugar aunque el usuario haga scroll */
+    bottom: 12px;
+    right: 18px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--color-texto-suave);
+    letter-spacing: 0.05em;
+    opacity: 0.6;
+    z-index: 1000;
+    pointer-events: none;  /* El texto no intercepta clics del usuario */
+}
+
+
+/* ============================================================================
+   4. PANTALLA DE LOGIN
+   ============================================================================
+   Cubre toda la pantalla con un fondo de degradado y muestra una caja
+   central de autenticación con sombra y bordes suaves.
+============================================================================ */
+
+/* Contenedor que ocupa todo el viewport y centra la caja de login */
+#pantalla-acceso {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;      /* Centra verticalmente */
+    justify-content: center;  /* Centra horizontalmente */
+    padding: 20px;
+    /* Degradado diagonal que va del azul marino al azul acento */
+    background: linear-gradient(135deg, var(--color-principal) 0%, var(--color-acento) 100%);
+    /* Patrón de puntos sutil superpuesto para textura */
+    background-image: 
+        radial-gradient(circle at 2px 2px, rgba(255,255,255,0.08) 1px, transparent 0),
+        linear-gradient(135deg, var(--color-principal) 0%, var(--color-acento) 100%);
+    background-size: 32px 32px, cover;
+}
+
+/* Tarjeta blanca del formulario de login */
+.caja-login {
+    background: var(--color-blanco);
+    border-radius: var(--radio-lg);
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 420px;          /* Ancho máximo para que no sea demasiado ancho en pantallas grandes */
+    text-align: center;
+    box-shadow: var(--sombra-xl);
+    /* Animación de entrada al cargar la página */
+    animation: fadeInUp 0.5s ease both;
+}
+
+/* Logo de la institución dentro del login */
+.logo-login {
+    max-height: 75px;
+    width: auto;
+    margin-bottom: 20px;
+    /* Sombra azul suave debajo del logo para un efecto de profundidad */
+    filter: drop-shadow(0 4px 8px rgba(26,54,93,0.2));
+}
+
+/* Título principal de la caja de login */
+.titulo-login {
+    font-family: var(--fuente-titulo);
+    font-size: 1.9rem;
+    color: var(--color-principal);
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+}
+
+/* Subtítulo debajo del título en el login */
+.subtitulo-login {
+    font-size: 0.85rem;
+    color: var(--color-texto-suave);
+    margin-bottom: 24px;
+    font-weight: 400;
+}
+
+/* Línea horizontal decorativa con degradado para separar visualmente las secciones */
+.separador-login {
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--color-acento), transparent);
+    margin: 0 auto 28px;
+    width: 80%;
+    border-radius: var(--radio-pill);
+}
+
+/* Contenedor de cada campo del formulario de login */
+.campo-login {
+    text-align: left;
+    margin-bottom: 16px;
+}
+
+/* Etiqueta (label) del campo de contraseña */
+.etiqueta-campo {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+}
+
+/* Campo de texto/password del login */
+.input-login {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--color-borde);
+    border-radius: var(--radio-sm);
+    font-family: var(--fuente-cuerpo);
+    font-size: 0.95rem;
+    color: var(--color-texto);
+    background: #f8fafc;
+    transition: var(--transicion);
+    outline: none;
+}
+
+/* Estado activo/foco del campo de contraseña: resalta el borde */
+.input-login:focus {
+    border-color: var(--color-acento);
+    background: var(--color-blanco);
+    /* Halo azul suave alrededor del campo para indicar que está activo */
+    box-shadow: 0 0 0 4px rgba(43,108,176,0.12);
+}
+
+/* Botón principal de "Ingresar al Sistema" */
+.btn-ingresar {
+    width: 100%;
+    padding: 13px 24px;
+    margin-top: 8px;
+    background: linear-gradient(135deg, var(--color-principal), var(--color-acento));
+    color: var(--color-blanco);
+    border: none;
+    border-radius: var(--radio-sm);
+    font-family: var(--fuente-cuerpo);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: var(--transicion);
+    /* Sombra azul para dar sensación de que el botón "flota" */
+    box-shadow: 0 4px 15px rgba(26,54,93,0.3);
+}
+
+/* Efecto hover: el botón sube ligeramente y la sombra se extiende */
+.btn-ingresar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(26,54,93,0.4);
+}
+
+/* Efecto al hacer clic: el botón baja para simular que se presiona */
+.btn-ingresar:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(26,54,93,0.3);
+}
+
+
+/* ============================================================================
+   5. CABECERA DEL SISTEMA
+   ============================================================================
+   Banda horizontal visible en la parte superior de la app una vez logueado.
+   Contiene logo, título del sistema y subtítulo.
+============================================================================ */
+.cabecera-sistema {
+    background: linear-gradient(135deg, var(--color-principal) 0%, #2c4a6e 100%);
+    color: var(--color-blanco);
+    padding: 28px 0;
+    margin-bottom: 32px;
+    /* Borde inferior como acento visual */
+    border-bottom: 3px solid var(--color-acento);
+    box-shadow: var(--sombra-md);
+}
+
+/* Contenedor interno que alinea el logo y el texto en una fila */
+.contenido-cabecera {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;           /* Espacio entre el logo y el texto */
+}
+
+/* Logo pequeño en la cabecera del sistema (más pequeño que el del login) */
+.logo-cabecera {
+    height: 55px;
+    width: auto;
+    /* Filtro para asegurarse de que el logo se vea bien sobre fondo oscuro */
+    filter: brightness(1.1) drop-shadow(0 2px 6px rgba(0,0,0,0.2));
+}
+
+/* Título principal del sistema en la cabecera */
+.titulo-cabecera {
+    font-family: var(--fuente-titulo);
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+    margin: 0;
+    line-height: 1.1;
+}
+
+/* Subtítulo pequeño debajo del título en la cabecera */
+.subtitulo-cabecera {
+    font-size: 0.82rem;
+    opacity: 0.7;
+    margin: 4px 0 0;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+
+/* ============================================================================
+   6. PANEL DE BÚSQUEDA
+   ============================================================================
+   Tarjeta blanca con el formulario de búsqueda y filtros.
+   Se ubica dentro del contenedor principal debajo de la cabecera.
+============================================================================ */
+
+/* Contenedor principal de todo el contenido (después de la cabecera) */
+.contenedor-principal {
+    max-width: 1100px;         /* Ancho máximo para pantallas muy grandes */
+    margin: 0 auto;            /* Centrado horizontal */
+    padding: 0 20px 40px;      /* Sangría lateral y espacio inferior */
+}
+
+/* Tarjeta del panel de búsqueda */
+.panel-busqueda {
+    background: var(--color-blanco);
+    border-radius: var(--radio-md);
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    box-shadow: var(--sombra-md);
+    border: 1px solid var(--color-borde);
+    /* Animación de entrada */
+    animation: fadeInUp 0.4s ease both;
+    animation-delay: 0.1s;
+}
+
+/* Título dentro del panel de búsqueda */
+.titulo-panel {
+    font-family: var(--fuente-cuerpo);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-principal);
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Ícono emoji al lado del título del panel */
+.icono-panel {
+    font-size: 1.1rem;
+}
+
+/* Fila que contiene los campos y el botón de búsqueda */
+.fila-busqueda {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;     /* Alinea el botón con la base de los campos */
+    flex-wrap: wrap;           /* En celular, los campos se apilan verticalmente */
+}
+
+/* Contenedor de cada campo individual del formulario */
+.grupo-campo {
+    flex: 1;                   /* Ocupa el espacio disponible proporcionalmente */
+    min-width: 200px;          /* Ancho mínimo antes de que se rompa en nueva fila */
+}
+
+/* Variante: campo más pequeño (usado para el selector de Libro) */
+.grupo-campo--chico {
+    flex: 0 0 180px;           /* Ancho fijo de 180px, no crece ni se achica */
+}
+
+/* Variante: contenedor para el botón de búsqueda */
+.grupo-campo--boton {
+    flex: 0 0 auto;            /* Solo ocupa el ancho que necesita el botón */
+}
+
+/* Campos de texto y select dentro del formulario de búsqueda */
+.campo-busqueda {
+    width: 100%;
+    padding: 11px 16px;
+    border: 2px solid var(--color-borde);
+    border-radius: var(--radio-sm);
+    font-family: var(--fuente-cuerpo);
+    font-size: 0.92rem;
+    color: var(--color-texto);
+    background: #f8fafc;
+    transition: var(--transicion);
+    outline: none;
+    -webkit-appearance: none; /* Elimina el estilo nativo del browser en algunos sistemas */
+}
+
+/* Estado activo/foco de los campos de búsqueda */
+.campo-busqueda:focus {
+    border-color: var(--color-acento);
+    background: var(--color-blanco);
+    box-shadow: 0 0 0 4px rgba(43,108,176,0.1);
+}
+
+/* Botón principal de búsqueda */
+.btn-buscar {
+    padding: 11px 28px;
+    background: var(--color-principal);
+    color: var(--color-blanco);
+    border: none;
+    border-radius: var(--radio-sm);
+    font-family: var(--fuente-cuerpo);
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: var(--transicion);
+    white-space: nowrap;       /* Evita que el texto del botón se corte en dos líneas */
+    box-shadow: var(--sombra-sm);
+}
+
+/* Efecto hover del botón de búsqueda */
+.btn-buscar:hover {
+    background: var(--color-acento);
+    transform: translateY(-1px);
+    box-shadow: var(--sombra-md);
+}
+
+.btn-buscar:active {
+    transform: translateY(0);
+}
+
+
+/* ============================================================================
+   7. INDICADOR DE CARGA
+   ============================================================================
+   Aparece mientras se espera la respuesta de la API de Google Sheets.
+   Usa una animación de spinner circular.
+============================================================================ */
+.indicador-carga {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px;
+    color: var(--color-acento);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+/* Círculo giratorio del spinner */
+.spinner-carga {
+    width: 22px;
+    height: 22px;
+    border: 3px solid var(--color-acento-suave);
+    border-top-color: var(--color-acento);  /* Solo el borde superior tiene color completo */
+    border-radius: 50%;
+    /* La animación 'girar' está definida en la sección @keyframes al final */
+    animation: girar 0.8s linear infinite;
+}
+
+
+/* ============================================================================
+   8. SECCIÓN DE RESULTADOS
+   ============================================================================
+   Contiene la barra de info, la tabla (desktop), las tarjetas (móvil)
+   y los controles de paginación.
+============================================================================ */
+
+/* Tarjeta contenedora de todos los resultados */
+.seccion-resultados {
+    background: var(--color-blanco);
+    border-radius: var(--radio-md);
+    padding: 24px;
+    box-shadow: var(--sombra-md);
+    border: 1px solid var(--color-borde);
+    animation: fadeInUp 0.4s ease both;
+    animation-delay: 0.2s;
+}
+
+/* Barra superior con contador de resultados y botón de ordenar (móvil) */
+.barra-resultados {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    min-height: 28px;
+}
+
+/* Texto que muestra cuántos resultados se encontraron */
+.contador-resultados {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Botón de ordenar que solo aparece en pantallas pequeñas */
+.btn-ordenar-movil {
+    padding: 6px 14px;
+    background: var(--color-acento-suave);
+    color: var(--color-acento);
+    border: 1px solid #bee3f8;
+    border-radius: var(--radio-pill);
+    font-family: var(--fuente-cuerpo);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transicion);
+}
+
+.btn-ordenar-movil:hover {
+    background: #bee3f8;
+}
+
+/* --- TABLA DE DATOS --- */
+
+/* Envuelve la tabla para permitir scroll horizontal en pantallas pequeñas */
+.tabla-envolvente {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+    border-radius: var(--radio-sm);
+    border: 1px solid var(--color-borde);
+}
+
+/* La tabla en sí */
+.tabla-datos {
+    width: 100%;
+    border-collapse: collapse;   /* Elimina el doble borde entre celdas */
+    font-size: 0.88rem;
+}
+
+/* Todas las celdas de la tabla */
+.tabla-datos th,
+.tabla-datos td {
+    padding: 13px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-borde);
+}
+
+/* Encabezados de columna */
+.tabla-datos thead th {
+    background: var(--color-principal);
+    color: var(--color-blanco);
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    white-space: nowrap;   /* Evita que el texto del encabezado se corte */
+}
+
+/* Remueve el borde de la última fila */
+.tabla-datos tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Efecto hover en las filas de datos */
+.tabla-datos tbody tr:hover {
+    background: var(--color-acento-suave);
+}
+
+/* Celda de estado (mensaje inicial o "sin resultados") */
+.celda-estado {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--color-texto-suave);
+    font-style: italic;
+    font-size: 0.9rem;
+    background: #f8fafc;
+}
+
+/* Columna del DNI */
+.col-dni {
+    width: 130px;
+}
+
+/* Columna de libro (más estrecha) */
+.col-libro {
+    width: 100px;
+}
+
+/* Columna del folio */
+.col-folio {
+    width: 80px;
+}
+
+/* Columna de acciones (botón PDF) */
+.col-accion {
+    width: 100px;
+    text-align: center;
+}
+
+/* Encabezado de la columna "Apellido y Nombre" que es interactivo (ordenable) */
+.columna-ordenable {
+    cursor: pointer;
+    user-select: none;         /* Evita que el texto se seleccione al hacer doble clic */
+    transition: var(--transicion);
+}
+
+.columna-ordenable:hover {
+    background-color: #16417a !important; /* Oscurece levemente al pasar el mouse */
+}
+
+/* Ícono de flecha que indica el orden actual de la columna */
+#iconoOrden {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-left: 4px;
+}
+
+/* --- ESTILOS DE CONTENIDO DENTRO DE LAS CELDAS --- */
+
+/* DNI: texto gris y monoespaciado para que los números queden alineados */
+.tabla-datos .col-dni-valor {
+    color: var(--color-texto-suave);
+    font-family: 'Courier New', monospace;
+    font-size: 0.82rem;
+}
+
+/* Badge/etiqueta del número de Libro (M1, M2, M3) */
+.badge-libro {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: var(--radio-pill);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    background: var(--color-acento-suave);
+    color: var(--color-acento);
+    border: 1px solid #bee3f8;
+}
+
+/* Botón de "Ver PDF" dentro de la tabla */
+.btn-ver-pdf {
+    display: inline-block;
+    padding: 6px 14px;
+    background: var(--color-principal);
+    color: var(--color-blanco);
+    border: none;
+    border-radius: var(--radio-sm);
+    font-family: var(--fuente-cuerpo);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: var(--transicion);
+    text-transform: uppercase;
+}
+
+.btn-ver-pdf:hover {
+    background: var(--color-acento);
+    transform: translateY(-1px);
+    box-shadow: var(--sombra-sm);
+}
+
+/* --- VISTA DE TARJETAS (SOLO EN MÓVIL) --- */
+
+/* Contenedor de las tarjetas (oculto en escritorio, visible en móvil) */
+.contenedor-tarjetas {
+    display: none;
+}
+
+/* Cada tarjeta individual de alumno */
+.tarjeta-alumno {
+    background: var(--color-blanco);
+    border-radius: var(--radio-md);
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    /* Línea lateral de color que identifica visualmente el registro */
+    border-left: 4px solid var(--color-acento);
+    box-shadow: var(--sombra-sm);
+    border: 1px solid var(--color-borde);
+    border-left: 4px solid var(--color-acento);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    animation: fadeInUp 0.3s ease both;
+}
+
+/* Nombre del alumno en la tarjeta móvil */
+.tarjeta-nombre {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--color-texto);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+/* DNI del alumno en la tarjeta */
+.tarjeta-dni {
+    font-size: 0.82rem;
+    color: var(--color-acento);
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+/* Información de Libro y Folio en la tarjeta */
+.tarjeta-info {
+    font-size: 0.8rem;
+    color: var(--color-texto-suave);
+}
+
+
+/* ============================================================================
+   9. PAGINACIÓN
+   ============================================================================
+   Barra de navegación entre páginas de resultados.
+   Está oculta por defecto y se muestra cuando hay resultados.
+============================================================================ */
+.paginacion {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-borde);
+}
+
+/* Botones de "Anterior" y "Siguiente" */
+.btn-pagina {
+    padding: 8px 20px;
+    border: 2px solid var(--color-borde);
+    background: var(--color-blanco);
+    color: var(--color-principal);
+    border-radius: var(--radio-sm);
+    font-family: var(--fuente-cuerpo);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transicion);
+}
+
+.btn-pagina:hover:not(:disabled) {
+    border-color: var(--color-acento);
+    background: var(--color-acento-suave);
+    color: var(--color-acento);
+}
+
+/* Estado deshabilitado: cuando estamos en la primera o última página */
+.btn-pagina:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;   /* Cursor que indica que no se puede hacer clic */
+}
+
+/* Texto de "Página X de Y" entre los botones */
+.indicador-pagina {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-principal);
+    padding: 0 8px;
+}
+
+
+/* ============================================================================
+   10. CLASES DE UTILIDAD
+   ============================================================================
+   Clases cortas para mostrar u ocultar elementos dinámicamente desde JS.
+============================================================================ */
+
+/* Oculta un elemento completamente (no ocupa espacio en la página) */
+.oculto {
+    display: none !important;
+}
+
+/* Muestra un elemento que estaba oculto */
+.visible {
+    display: flex !important;
+}
+
+
+/* ============================================================================
+   11. MEDIA QUERIES — DISEÑO RESPONSIVE
+   ============================================================================
+   Adapta el diseño a pantallas pequeñas (celulares).
+   max-width: 767px cubre la mayoría de los teléfonos inteligentes.
+============================================================================ */
+@media (max-width: 767px) {
+
+    /* Reduce el padding lateral de la cabecera en celular */
+    .contenido-cabecera {
+        padding: 0 16px;
+    }
+
+    .titulo-cabecera {
+        font-size: 1.5rem;
+    }
+
+    /* Reduce el padding del panel de búsqueda */
+    .panel-busqueda {
+        padding: 20px 16px;
+    }
+
+    /* En celular, los campos del formulario se apilan verticalmente */
+    .fila-busqueda {
+        flex-direction: column;
+    }
+
+    /* En celular, cada campo ocupa todo el ancho */
+    .grupo-campo,
+    .grupo-campo--chico,
+    .grupo-campo--boton {
+        flex: 1 1 100%;
+        min-width: unset;
+    }
+
+    /* El botón de búsqueda también ocupa todo el ancho */
+    .btn-buscar {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Oculta la tabla en celular: se reemplaza por las tarjetas */
+    .tabla-envolvente {
+        display: none;
+    }
+
+    /* Muestra las tarjetas en celular */
+    .contenedor-tarjetas {
+        display: block;
+    }
+
+    .seccion-resultados {
+        padding: 16px;
+    }
+}
+
+
+/* ============================================================================
+   12. ANIMACIONES (@keyframes)
+   ============================================================================
+   Define las animaciones reutilizables del proyecto.
+============================================================================ */
+
+/*
+   fadeInUp: Hace que un elemento aparezca desde abajo con un efecto de
+   desvanecimiento (fade). Se usa en la caja de login, panel de búsqueda,
+   sección de resultados y tarjetas de alumno.
+*/
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px);  /* Empieza 16px más abajo */
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);     /* Termina en su posición normal */
+    }
+}
+
+/*
+   girar: Rotación completa de 360°. Se usa en el spinner de carga.
+   'linear' hace que la velocidad sea constante (sin aceleración).
+*/
+@keyframes girar {
+    to {
+        transform: rotate(360deg);
+    }
+}

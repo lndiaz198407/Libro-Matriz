@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <!--
+        viewport: Configura el comportamiento en dispositivos móviles.
+        "width=device-width" hace que el ancho sea igual al del dispositivo.
+        "initial-scale=1.0" evita el zoom automático al cargar.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Libro Matriz | Sistema de Consulta Escolar</title>
+
+    <!--
+        ========================================================
+        DEPENDENCIAS EXTERNAS
+        ========================================================
+        Bootstrap 5.3.2: Framework CSS para grillas, botones, tablas,
+        badges y utilidades responsivas. Se carga desde CDN para
+        no necesitar instalación local.
+    -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!--
+        Google Fonts: Cargamos dos tipografías distintas.
+        - "DM Serif Display": Para títulos. Elegante y de alto impacto.
+        - "DM Sans": Para el cuerpo del texto. Moderna y muy legible.
+        El parámetro "display=swap" mejora el rendimiento mostrando 
+        texto de respaldo mientras carga la fuente personalizada.
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!--
+        Hoja de estilos propia del proyecto.
+        SIEMPRE se carga DESPUÉS de Bootstrap para que nuestras
+        reglas puedan sobreescribir las de Bootstrap si es necesario.
+    -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!--
+        ========================================================
+        FIRMA DEL AUTOR
+        ========================================================
+        Elemento decorativo fijo en la esquina inferior derecha.
+        No interfiere con el contenido principal. Su posición 
+        y estilo están definidos en styles.css (.firma-autor).
+    -->
+    <div class="firma-autor">Creado por Diaz Luis</div>
+
+
+    <!-- ======================================================
+         PANTALLA DE ACCESO / LOGIN
+         ======================================================
+         Este bloque es lo PRIMERO que ve el usuario al abrir la
+         página. Cubre toda la pantalla y pide contraseña.
+         
+         Cuando la contraseña es correcta, el JavaScript
+         oculta este bloque (#pantalla-acceso) y muestra
+         el bloque del sistema principal (#seccion-sistema).
+         
+         La función "verificarAcceso()" en app.js maneja esto.
+    -->
+    <div id="pantalla-acceso">
+        <div class="caja-login">
+            <!-- Logo de la institución educativa -->
+            <img 
+                src="https://lh3.googleusercontent.com/u/0/d/1oriT6eUyMSz4E8WiCp6sYflhK5_r_q9k" 
+                alt="Logo de la institución" 
+                class="logo-login"
+            >
+            <h2 class="titulo-login">Libro Matriz</h2>
+            <p class="subtitulo-login">Sistema de Consulta Escolar</p>
+            
+            <!--
+                Separador visual decorativo.
+                Es simplemente un div con un estilo de línea gradiente.
+            -->
+            <div class="separador-login"></div>
+
+            <div class="campo-login">
+                <label class="etiqueta-campo" for="campoClave">Contraseña de acceso</label>
+                <!--
+                    onkeydown: Escucha las teclas presionadas.
+                    Si la tecla presionada es "Enter", ejecuta 
+                    verificarAcceso() para no obligar al usuario
+                    a hacer clic en el botón.
+                -->
+                <input 
+                    type="password" 
+                    id="campoClave" 
+                    class="input-login" 
+                    placeholder="Ingresá tu contraseña"
+                    onkeydown="if(event.key === 'Enter') verificarAcceso()"
+                >
+            </div>
+            <button onclick="verificarAcceso()" class="btn-ingresar">
+                Ingresar al Sistema
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ======================================================
+         SECCIÓN PRINCIPAL DEL SISTEMA
+         ======================================================
+         Este bloque está OCULTO por defecto (display: none en CSS).
+         Solo se muestra después de que el login es exitoso.
+         Contiene todo el buscador, tabla de resultados y paginación.
+    -->
+    <div id="seccion-sistema">
+
+        <!-- --------------------------------------------------
+             CABECERA / HEADER DEL SISTEMA
+             --------------------------------------------------
+             Banda superior con logo, título y subtítulo.
+             Presente en todas las "pantallas" una vez logueado.
+        -->
+        <header class="cabecera-sistema">
+            <div class="contenido-cabecera">
+                <img 
+                    src="https://lh3.googleusercontent.com/u/0/d/1oriT6eUyMSz4E8WiCp6sYflhK5_r_q9k" 
+                    alt="Logo de la institución" 
+                    class="logo-cabecera"
+                >
+                <div>
+                    <h1 class="titulo-cabecera">Libro Matriz</h1>
+                    <p class="subtitulo-cabecera">Consulta de Registros Escolares</p>
+                </div>
+            </div>
+        </header>
+
+
+        <main class="contenedor-principal">
+
+            <!-- -----------------------------------------------
+                 PANEL DE BÚSQUEDA Y FILTROS
+                 -----------------------------------------------
+                 Formulario de búsqueda con dos entradas:
+                 1. Nombre o DNI del alumno (texto libre)
+                 2. Filtro por número de Libro (M1, M2, M3)
+                 
+                 El botón "Buscar" llama a buscarEnSheets() en app.js
+                 que consulta Google Sheets API y filtra los resultados.
+            -->
+            <section class="panel-busqueda">
+                <h2 class="titulo-panel">
+                    <span class="icono-panel">🔍</span>
+                    Buscar Alumno
+                </h2>
+                <div class="fila-busqueda">
+                    <!-- Campo 1: Búsqueda por nombre o DNI -->
+                    <div class="grupo-campo">
+                        <label class="etiqueta-campo" for="inputNombre">Nombre o DNI del Alumno</label>
+                        <input 
+                            type="text" 
+                            id="inputNombre" 
+                            class="campo-busqueda" 
+                            placeholder="Ej: Pérez, González o 35444..."
+                            onkeyup="if(event.key === 'Enter') buscarEnSheets()"
+                        >
+                    </div>
+
+                    <!-- Campo 2: Selector del número de Libro -->
+                    <div class="grupo-campo grupo-campo--chico">
+                        <label class="etiqueta-campo" for="selectLibro">Filtrar por Libro</label>
+                        <select id="selectLibro" class="campo-busqueda">
+                            <option value="">Todos los libros</option>
+                            <option value="M1">Libro M1</option>
+                            <option value="M2">Libro M2</option>
+                            <option value="M3">Libro M3</option>
+                        </select>
+                    </div>
+
+                    <!-- Botón de búsqueda -->
+                    <div class="grupo-campo grupo-campo--boton">
+                        <button onclick="buscarEnSheets()" class="btn-buscar">
+                            Buscar
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- -----------------------------------------------
+                 INDICADOR DE CARGA
+                 -----------------------------------------------
+                 Se muestra SOLO mientras se espera la respuesta
+                 de la API de Google Sheets. El JavaScript lo 
+                 activa/desactiva con las clases 'visible' y 'oculto'.
+            -->
+            <div id="indicador-carga" class="indicador-carga oculto">
+                <div class="spinner-carga"></div>
+                <span>Consultando registros...</span>
+            </div>
+
+
+            <!-- -----------------------------------------------
+                 TABLA DE RESULTADOS (VISTA ESCRITORIO)
+                 -----------------------------------------------
+                 Se muestra en pantallas medianas y grandes (md+).
+                 En pantallas pequeñas (celular) se oculta y 
+                 en su lugar aparece la vista de tarjetas.
+                 
+                 La cabecera "Apellido y Nombre" es interactiva:
+                 hacer clic llama a ordenarPorApellido() en app.js
+                 y alterna entre orden A-Z y Z-A.
+            -->
+            <section class="seccion-resultados">
+
+                <!-- Contador de resultados -->
+                <div class="barra-resultados">
+                    <span id="contadorResultados" class="contador-resultados"></span>
+                    <!-- Botón de ordenar (solo visible en móvil, alternativo a la columna de la tabla) -->
+                    <button onclick="ordenarPorApellido()" class="btn-ordenar-movil d-md-none">
+                        Ordenar A-Z ↕️
+                    </button>
+                </div>
+
+                <!-- TABLA: visible en computadoras/tablets -->
+                <div class="tabla-envolvente">
+                    <table class="tabla-datos">
+                        <thead>
+                            <tr>
+                                <th class="col-dni">DNI</th>
+                                <!--
+                                    Columna ordenable: El atributo onclick llama a 
+                                    ordenarPorApellido() que ordena listaCompletaFiltrada
+                                    y reconstruye la vista. El icono cambia entre ↕️ 🔼 🔽
+                                    para dar feedback visual del orden actual.
+                                -->
+                                <th onclick="ordenarPorApellido()" class="col-nombre columna-ordenable" title="Clic para ordenar A-Z / Z-A">
+                                    Apellido y Nombre <span id="iconoOrden">↕</span>
+                                </th>
+                                <th class="col-libro">Libro</th>
+                                <th class="col-folio">Folio</th>
+                                <th class="col-accion">Acción</th>
+                            </tr>
+                        </thead>
+                        <!--
+                            El <tbody> comienza con un mensaje de estado.
+                            El JavaScript (actualizarVista() en app.js) lo reemplaza
+                            con las filas de datos dinámicamente usando innerHTML.
+                        -->
+                        <tbody id="cuerpoTabla">
+                            <tr>
+                                <td colspan="5" class="celda-estado">
+                                    Ingresá datos para comenzar la búsqueda.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- TARJETAS: visible solo en celulares (CSS maneja la alternancia) -->
+                <div id="contenedorTarjetas" class="contenedor-tarjetas"></div>
+
+
+                <!-- -----------------------------------------------
+                     CONTROLES DE PAGINACIÓN
+                     -----------------------------------------------
+                     Los resultados se muestran de a 10 por página.
+                     Estos botones están ocultos hasta que haya resultados.
+                     
+                     cambiarPagina(-1): va a la página anterior
+                     cambiarPagina(1): va a la página siguiente
+                     
+                     Los botones se deshabilitan automáticamente cuando
+                     el usuario está en la primera o última página.
+                -->
+                <nav id="controles-paginacion" class="paginacion oculto">
+                    <button 
+                        id="btnAnterior" 
+                        class="btn-pagina" 
+                        onclick="cambiarPagina(-1)"
+                    >
+                        ← Anterior
+                    </button>
+                    <span id="indicadorPagina" class="indicador-pagina">Página 1 de 1</span>
+                    <button 
+                        id="btnSiguiente" 
+                        class="btn-pagina" 
+                        onclick="cambiarPagina(1)"
+                    >
+                        Siguiente →
+                    </button>
+                </nav>
+
+            </section>
+        </main>
+
+    </div><!-- Fin de #seccion-sistema -->
+
+
+    <!--
+        ========================================================
+        SCRIPTS AL FINAL DEL BODY
+        ========================================================
+        Los scripts se colocan AQUÍ (al final del <body>) y no en el
+        <head> para garantizar que todo el HTML ya esté cargado y 
+        disponible en el DOM antes de que el JavaScript se ejecute.
+        Si estuvieran en el <head>, el JS intentaría buscar elementos
+        que todavía no existen y fallaría.
+        
+        Bootstrap JS: Necesario para los componentes interactivos de
+        Bootstrap como modales, dropdowns, etc. (aunque en esta versión
+        no se usan, es buena práctica incluirlo por si se añaden).
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!--
+        app.js: Toda la lógica personalizada de la aplicación.
+        Separado del HTML para mayor orden y mantenibilidad.
+    -->
+    <script src="app.js"></script>
+
+</body>
+</html>

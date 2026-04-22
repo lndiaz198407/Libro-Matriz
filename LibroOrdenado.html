@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Libro Matriz</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        /* ESTILOS GENERALES */
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; padding-bottom: 60px; }
+        
+        /* Oculta el sistema principal hasta que la contraseña sea correcta */
+        #seccion-sistema { display: none; }
+        
+        /* Diseño de la caja de login */
+        .caja-login { max-width: 400px; margin: 80px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        /* Tamaño máximo para el logo de la escuela */
+        .logo-institucion { max-height: 80px; margin-bottom: 10px; }
+
+        /* Estilo para los títulos de la tabla que permiten ordenar al hacer clic */
+        .columna-ordenable { 
+            cursor: pointer; 
+            transition: background 0.3s;
+        }
+        .columna-ordenable:hover {
+            background-color: #343a40 !important; /* Oscurece un poco al pasar el mouse */
+        }
+
+        /* DISEÑO RESPONSIVE (MÓVILES) */
+        /* Por defecto, las tarjetas para celular están ocultas */
+        .vista-tarjetas { display: none; }
+        
+        @media (max-width: 767px) {
+            /* En pantallas pequeñas, ocultamos la tabla y mostramos las tarjetas */
+            .table-responsive { display: none; }
+            .vista-tarjetas { display: block; }
+            .tarjeta-alumno {
+                background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px;
+                border-left: 5px solid #0d6efd; /* Línea azul lateral decorativa */
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+        }
+        /* Firma pequeña en la esquina inferior */
+        .autor-leyenda { position: fixed; bottom: 10px; right: 15px; font-size: 0.7rem; color: #adb5bd; z-index: 1000; }
+    </style>
+</head>
+<body>
+
+<div class="autor-leyenda">Creado por Diaz Luis</div>
+
+<div id="pantalla-acceso" class="container caja-login text-center shadow-sm">
+    <img src="https://lh3.googleusercontent.com/u/0/d/1oriT6eUyMSz4E8WiCp6sYflhK5_r_q9k" alt="Logo" class="logo-institucion">
+    <h3 class="text-primary mb-4">Sistema Libro Matriz</h3>
+    <input type="password" id="campoClave" class="form-control mb-3" placeholder="Contraseña" onkeydown="if(event.key === 'Enter') verificarAcceso()">
+    <button onclick="verificarAcceso()" class="btn btn-primary w-100 shadow-sm">Entrar</button>
+</div>
+
+<div id="seccion-sistema">
+    <div class="header-sistema bg-primary text-white text-center py-4 mb-4 shadow">
+        <img src="https://lh3.googleusercontent.com/u/0/d/1oriT6eUyMSz4E8WiCp6sYflhK5_r_q9k" alt="Logo" class="logo-institucion">
+        <h1>Libro Matriz</h1>
+        <p class="mb-0 opacity-75">Consulta de Registros Escolares</p>
+    </div>
+
+    <div class="container">
+        <div class="bg-white p-4 rounded shadow-sm mb-4 border">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small">Nombre o DNI del Alumno</label>
+                    <input type="text" id="inputNombre" class="form-control" placeholder="Ej: Perez o 35444..." onkeyup="if(event.key === 'Enter') buscarEnSheets()">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold small">Filtrar por Libro</label>
+                    <select id="selectLibro" class="form-select">
+                        <option value="">Todos los libros</option>
+                        <option value="M1">Libro M1</option>
+                        <option value="M2">Libro M2</option>
+                        <option value="M3">Libro M3</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button onclick="buscarEnSheets()" class="btn btn-primary w-100 fw-bold shadow-sm">BUSCAR</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive bg-white p-3 rounded shadow-sm border">
+            <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 15%;">DNI</th>
+                        <th onclick="ordenarPorApellido()" class="columna-ordenable" title="Clic para ordenar A-Z / Z-A">
+                            Apellido y Nombre <span id="iconoOrden">↕️</span>
+                        </th>
+                        <th>Matriz</th>
+                        <th>Folio</th>
+                        <th class="text-center">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoTabla">
+                    <tr><td colspan="5" class="text-center text-muted">Ingresá datos para buscar.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-md-none mb-3 text-end">
+            <button onclick="ordenarPorApellido()" class="btn btn-sm btn-outline-secondary">Ordenar A-Z ↕️</button>
+        </div>
+        
+        <div id="contenedorTarjetas" class="vista-tarjetas"></div>
+
+        <div id="controles-paginacion" class="justify-content-center align-items-center mt-4 d-none gap-2">
+            <button id="btnAnterior" class="btn btn-sm btn-outline-primary" onclick="cambiarPagina(-1)">« Ant.</button>
+            <span id="indicadorPagina" class="fw-bold text-primary px-3 small">Página 1</span>
+            <button id="btnSiguiente" class="btn btn-sm btn-outline-primary" onclick="cambiarPagina(1)">Sig. »</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- CONFIGURACIÓN DE CONEXIÓN ---
+    const CLAVE_MAESTRA = "1234"; 
+    const ID_PLANILLA = '1TzLLrFRzwGyQJBxScsVs5swRXXUpJQMpEatjAv7TFG0';
+    const API_KEY_GOOGLE = 'AIzaSyBau3ByRr-tdhfcAxGOeHIE3Bw4zggm5XQ';
+    // Rango A2:G1000 captura desde la primera columna hasta la G (donde está el ID del PDF)
+    const URL_CONSULTA = `https://sheets.googleapis.com/v4/spreadsheets/${ID_PLANILLA}/values/A2%3AG1000?key=${API_KEY_GOOGLE}`;
+
+    // VARIABLES GLOBALES
+    let listaCompletaFiltrada = []; // Aquí guardaremos los resultados que coincidan con la búsqueda
+    let paginaActual = 1;           // Control de en qué página estamos
+    const registrosPorPagina = 10;  // Cantidad de alumnos a mostrar por vez
+    let ordenAscendente = true;     // Alternar entre A-Z y Z-A
+
+    /**
+     * Función para limpiar el texto: quita mayúsculas, acentos y espacios extra.
+     * Esto permite que si buscas "perez" encuentre "Pérez".
+     */
+    const normalizar = (t) => t ? t.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+
+    /**
+     * Verifica si la contraseña ingresada coincide con la CLAVE_MAESTRA.
+     */
+    function verificarAcceso() {
+        if (document.getElementById('campoClave').value === CLAVE_MAESTRA) {
+            document.getElementById('pantalla-acceso').style.display = 'none';
+            document.getElementById('seccion-sistema').style.display = 'block';
+        } else { alert("⚠️ Clave incorrecta"); }
+    }
+
+    /**
+     * Se conecta a Google Sheets y filtra los datos según lo escrito en el buscador.
+     */
+    function buscarEnSheets() {
+        const busqueda = normalizar(document.getElementById('inputNombre').value);
+        const libroFiltro = document.getElementById('selectLibro').value.toUpperCase();
+
+        fetch(URL_CONSULTA)
+            .then(res => res.json())
+            .then(datos => {
+                if (!datos.values) return;
+                
+                // Filtramos el array de datos que viene de Google
+                listaCompletaFiltrada = datos.values.filter(fila => {
+                    const nombre = normalizar(fila[1]);  // Columna B (Nombre)
+                    const dni = fila[5] ? fila[5].toString() : ""; // Columna F (DNI)
+                    const libro = (fila[3] || "").toUpperCase(); // Columna D (Libro)
+                    
+                    // Verifica si la búsqueda coincide con nombre O con DNI
+                    const coincideBusqueda = nombre.includes(busqueda) || dni.includes(busqueda);
+                    // Verifica si coincide el filtro del Libro seleccionado
+                    const coincideLibro = libroFiltro === "" || libro === libroFiltro;
+                    
+                    return coincideBusqueda && coincideLibro;
+                });
+
+                paginaActual = 1; // Reiniciamos a la página 1 tras una nueva búsqueda
+                actualizarVista();
+            });
+    }
+
+    /**
+     * Ordena la lista actual alfabéticamente por el nombre (columna B).
+     */
+    function ordenarPorApellido() {
+        if (listaCompletaFiltrada.length === 0) return;
+
+        listaCompletaFiltrada.sort((a, b) => {
+            const nomA = normalizar(a[1]);
+            const nomB = normalizar(b[1]);
+            if (nomA < nomB) return ordenAscendente ? -1 : 1;
+            if (nomA > nomB) return ordenAscendente ? 1 : -1;
+            return 0;
+        });
+
+        // Cambiamos el emoji de la tabla para dar feedback visual
+        document.getElementById('iconoOrden').innerText = ordenAscendente ? "🔼" : "🔽";
+        
+        ordenAscendente = !ordenAscendente; // Invertimos para que el próximo clic ordene al revés
+        paginaActual = 1;
+        actualizarVista();
+    }
+
+    /**
+     * Dibuja la tabla y las tarjetas en pantalla basándose en los resultados filtrados.
+     */
+    function actualizarVista() {
+        const tabla = document.getElementById('cuerpoTabla');
+        const tarjetas = document.getElementById('contenedorTarjetas');
+        const controles = document.getElementById('controles-paginacion');
+        
+        // Calculamos qué trozo de la lista mostrar según la página actual
+        const inicio = (paginaActual - 1) * registrosPorPagina;
+        const listaRecortada = listaCompletaFiltrada.slice(inicio, inicio + registrosPorPagina);
+
+        let hTabla = ''; let hTarjetas = '';
+
+        if (listaRecortada.length === 0) {
+            hTabla = '<tr><td colspan="5" class="text-center text-danger">Sin resultados</td></tr>';
+            controles.classList.add('d-none');
+        } else {
+            listaRecortada.forEach(alumno => {
+                const dni = alumno[5] || "---"; // Columna F del Sheet
+                const idPdf = alumno[6];        // Columna G del Sheet
+
+                // Generamos las filas para la tabla (Computadora)
+                hTabla += `<tr>
+                    <td class="text-muted small">${dni}</td>
+                    <td class="fw-bold">${alumno[1]}</td>
+                    <td><span class="badge bg-light text-dark border">${alumno[3]}</span></td>
+                    <td>${alumno[4]}</td>
+                    <td class="text-center"><button onclick="abrirPdf('${idPdf}')" class="btn btn-sm btn-primary shadow-sm">VerPDF</button></td>
+                </tr>`;
+
+                // Generamos el diseño de tarjetas (Celular)
+                hTarjetas += `
+                <div class="tarjeta-alumno shadow-sm border">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-0 fw-bold text-uppercase">${alumno[1]}</h6>
+                            <p class="mb-1 small text-primary">DNI: ${dni}</p>
+                            <p class="mb-0 small text-muted">Libro: ${alumno[3]} | Folio: ${alumno[4]}</p>
+                        </div>
+                        <button onclick="abrirPdf('${idPdf}')" class="btn btn-primary btn-sm">PDF</button>
+                    </div>
+                </div>`;
+            });
+            controles.classList.remove('d-none');
+            controles.classList.add('d-flex');
+        }
+        
+        // Insertamos el HTML generado en sus contenedores
+        tabla.innerHTML = hTabla;
+        tarjetas.innerHTML = hTarjetas;
+
+        // Actualizamos los números de página y el estado de los botones (Habilitado/Deshabilitado)
+        const totalP = Math.ceil(listaCompletaFiltrada.length / registrosPorPagina);
+        document.getElementById('indicadorPagina').innerText = `Pág. ${paginaActual} de ${totalP || 1}`;
+        document.getElementById('btnAnterior').disabled = (paginaActual === 1);
+        document.getElementById('btnSiguiente').disabled = (paginaActual === totalP || totalP === 0);
+    }
+
+    /**
+     * Cambia de página y sube el scroll para que el usuario vea los nuevos resultados arriba.
+     */
+    function cambiarPagina(dir) { paginaActual += dir; actualizarVista(); window.scrollTo(0, 0); }
+    
+    /**
+     * Abre el visor de Google Drive con el ID del archivo proporcionado.
+     */
+    function abrirPdf(id) { 
+        if(id && id !== "no") window.open("https://drive.google.com/file/d/" + id + "/preview", "_blank"); 
+        else alert("⚠️ No hay PDF vinculado."); 
+    }
+</script>
+
+</body>
+</html>
