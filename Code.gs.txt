@@ -1,0 +1,72 @@
+/**
+ * Función para vincular folios de múltiples libros (M1, M2, M3, etc.)
+ * utilizando los IDs de sus respectivas carpetas en Google Drive.
+ */
+function vincularTodosLosFolios() {
+  // 1. CONFIGURACIÓN DE CARPETAS
+  // Pega aquí los IDs de cada carpeta que tengas en Drive.
+  var carpetasConfig = {
+    "M1": "1CIVEDUO5mV4gC4byyhBxzv_r8ywx3aoR",
+    "M2": "1_pX3HZ-Uk7LULIx--qkureYl7IebsZbs",
+    "M3": "1CUI2kTH2o7AtPsiyEirsQrNihfAsFt6U",
+    "M4": "ID_DE_CARPETA_M4" // Puedes seguir agregando más líneas así
+  };
+
+  var hoja = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var datos = hoja.getDataRange().getValues();
+  
+  // Objeto para guardar los archivos de todas las carpetas escaneadas
+  // Estructura: { "M1-1": "ID_DRIVE", "M2-5": "ID_DRIVE" }
+  var mapaGlobal = {};
+
+  // 2. ESCANEO DE CARPETAS
+  // Recorremos las carpetas configuradas arriba para leer sus archivos
+  for (var prefijoLibro in carpetasConfig) {
+    var idCarpeta = carpetasConfig[prefijoLibro];
+    
+    try {
+      var carpeta = DriveApp.getFolderById(idCarpeta);
+      var archivos = carpeta.getFiles();
+      
+      while (archivos.hasNext()) {
+        var arc = archivos.next();
+        // Limpiamos el nombre del archivo (ej: "001.pdf" -> "1")
+        var nombreLimpio = arc.getName().toLowerCase().replace(".pdf", "").trim();
+        var numeroSolo = parseInt(nombreLimpio, 10).toString();
+        
+        // Guardamos con una clave única combinando Libro y Folio
+        mapaGlobal[prefijoLibro + "-" + numeroSolo] = arc.getId();
+      }
+    } catch (e) {
+      Logger.log("Error accediendo a la carpeta de " + prefijoLibro + ": " + e.message);
+    }
+  }
+
+  // 3. VINCULACIÓN EN LA HOJA DE EXCEL
+  // Empezamos desde la fila 2 (índice 1)
+  for (var i = 1; i < datos.length; i++) {
+    var libroExcel = datos[i][3].toString().trim().toUpperCase(); // Columna D (ej: M1)
+    var folioExcel = datos[i][4].toString().trim();               // Columna E (ej: 001)
+    
+    // Si la celda de libro o folio está vacía, saltamos a la siguiente
+    if (!libroExcel || !folioExcel) continue;
+
+    // Convertimos el folio del Excel a número limpio (001 -> 1)
+    var numeroFolioLimpio = parseInt(folioExcel, 10).toString();
+    
+    // Creamos la clave de búsqueda (ej: "M1-1")
+    var claveBusqueda = libroExcel + "-" + numeroFolioLimpio;
+    
+    if (mapaGlobal[claveBusqueda]) {
+      // Escribe el ID en la Columna F
+      hoja.getRange(i + 1, 7).setValue(mapaGlobal[claveBusqueda]);
+    } else {
+      // Si el libro está en nuestra configuración pero el archivo no está en Drive
+      if (carpetasConfig[libroExcel]) {
+        hoja.getRange(i + 1, 7).setValue("No encontrado en " + libroExcel);
+      }
+    }
+  }
+  
+  SpreadsheetApp.getUi().alert("Proceso completado. Se han vinculado los folios disponibles.");
+}

@@ -395,19 +395,7 @@ body {
     background: #f8fafc;
     transition: var(--transicion);
     outline: none;
-}
-
-/* Select específico: muestra flecha personalizada visible */
-select.campo-busqueda {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232b6cb0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 16px;
-    padding-right: 40px;
-    cursor: pointer;
+    -webkit-appearance: none; /* Elimina el estilo nativo del browser en algunos sistemas */
 }
 
 /* Estado activo/foco de los campos de búsqueda */
@@ -528,55 +516,6 @@ select.campo-busqueda {
 
 .btn-ordenar-movil:hover {
     background: #bee3f8;
-}
-
-/* Barra de ordenamiento condicional (aparece tras búsqueda activa) */
-.barra-ordenamiento {
-    display: none; /* Oculta por defecto; JS la muestra cuando hay resultados activos */
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--color-borde);
-}
-
-.barra-ordenamiento.visible {
-    display: flex !important;
-}
-
-.barra-ordenamiento span {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-texto-suave);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    align-self: center;
-    margin-right: 4px;
-}
-
-/* Botones de ordenar dentro de la barra de ordenamiento */
-.btn-ordenar {
-    padding: 6px 14px;
-    background: var(--color-acento-suave);
-    color: var(--color-acento);
-    border: 1px solid #bee3f8;
-    border-radius: var(--radio-pill);
-    font-family: var(--fuente-cuerpo);
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transicion);
-    white-space: nowrap;
-}
-
-.btn-ordenar:hover {
-    background: #bee3f8;
-}
-
-.btn-ordenar.activo {
-    background: var(--color-acento);
-    color: var(--color-blanco);
-    border-color: var(--color-acento);
 }
 
 /* --- TABLA DE DATOS --- */
@@ -858,10 +797,9 @@ select.campo-busqueda {
         padding: 20px 16px;
     }
 
-    /* En celular, los campos del formulario se apilan verticalmente y se centran */
+    /* En celular, los campos del formulario se apilan verticalmente */
     .fila-busqueda {
         flex-direction: column;
-        align-items: center;
     }
 
     /* En celular, cada campo ocupa todo el ancho */
@@ -870,15 +808,12 @@ select.campo-busqueda {
     .grupo-campo--boton {
         flex: 1 1 100%;
         min-width: unset;
-        width: 100%;
     }
 
-    /* El botón de búsqueda también ocupa todo el ancho y se centra */
+    /* El botón de búsqueda también ocupa todo el ancho */
     .btn-buscar {
         width: 100%;
         justify-content: center;
-        text-align: center;
-        display: block;
     }
 
     /* Oculta la tabla en celular: se reemplaza por las tarjetas */
@@ -893,18 +828,6 @@ select.campo-busqueda {
 
     .seccion-resultados {
         padding: 16px;
-    }
-
-    /* Barra de ordenamiento en móvil: centrada */
-    .barra-ordenamiento {
-        justify-content: center;
-    }
-
-    /* Ocultar la barra de resultados superior en móvil (el contador se integra abajo) */
-    .barra-resultados {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
     }
 }
 
@@ -941,3 +864,91 @@ select.campo-busqueda {
     }
 }
 
+
+/* ============================================================================
+   BADGE DE ACTUALIZACIÓN (debajo del panel de búsqueda)
+   ============================================================================
+   Chip/banner horizontal que se muestra entre el panel de búsqueda y la
+   tabla de resultados. Indica cuándo fue la última actualización del sistema.
+   
+   Diseño: fondo verde muy suave con borde izquierdo sólido verde,
+   para comunicar visualmente "todo en orden / datos vigentes".
+   La alineación es a la derecha dentro de su contenedor para no
+   confundirse con los controles de búsqueda.
+============================================================================ */
+
+/* Contenedor principal del badge */
+.badge-actualizacion {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f0fff4;                  /* Verde muy pálido */
+    border: 1px solid #9ae6b4;            /* Borde verde suave */
+    border-left: 4px solid #48bb78;       /* Acento izquierdo verde sólido */
+    border-radius: var(--radio-sm);
+    padding: 10px 18px;
+    margin-bottom: 16px;                  /* Espacio antes del spinner/resultados */
+    width: fit-content;                   /* Solo ocupa el ancho que necesita */
+    align-self: flex-end;                 /* Por si el padre es flex */
+    transition: var(--transicion);
+}
+
+/* Ícono de verificación (✓) */
+.badge-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: #48bb78;
+    color: white;
+    border-radius: 50%;
+    font-size: 0.72rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(72, 187, 120, 0.35);
+}
+
+/* Columna de texto: etiqueta encima, fecha abajo */
+.badge-contenido {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+/* Texto pequeño "Actualizado al" */
+.badge-etiqueta {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #276749;
+    opacity: 0.75;
+    line-height: 1;
+}
+
+/* Texto de la fecha en sí (ej: "15/07/2025 14:30") */
+.badge-fecha-texto {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #22543d;
+    line-height: 1.2;
+}
+
+/* Estado OCULTO: no ocupa espacio en el layout */
+.badge-oculto {
+    display: none !important;
+}
+
+/* Estado VISIBLE: aparece con animación de entrada */
+.badge-visible {
+    display: flex !important;
+    animation: fadeInUp 0.35s ease both;
+}
+
+/* En celular: ocupa todo el ancho disponible */
+@media (max-width: 767px) {
+    .badge-actualizacion {
+        width: 100%;
+    }
+}

@@ -126,7 +126,9 @@
                 <div>
                     <h1 class="titulo-cabecera">Libro Matriz</h1>
                     <p class="subtitulo-cabecera">Consulta de Registros Escolares</p>
+                    <p class="subtitulo-cabecera">Cens N° 18 Anexo Esc 42 y 46</p>
                 </div>
+
             </div>
         </header>
 
@@ -169,6 +171,9 @@
                             <option value="M1">Libro M1</option>
                             <option value="M2">Libro M2</option>
                             <option value="M3">Libro M3</option>
+                            <option value="M4">Libro M4</option>
+                            <option value="M5">Libro M5</option>
+                            <option value="M6">Libro M6</option>
                         </select>
                     </div>
 
@@ -180,6 +185,22 @@
                     </div>
                 </div>
             </section>
+
+            <!--
+                BADGE DE ACTUALIZACIÓN
+                =====================================================
+                Se ubica debajo del panel de búsqueda.
+                Empieza oculto y se muestra cuando buscarEnSheets()
+                lee un valor en la celda H1 del Sheet.
+                El texto dinámico se inyecta en .badge-fecha-texto.
+            -->
+            <div id="badge-actualizacion" class="badge-actualizacion badge-oculto" title="Fecha de la última actualización de registros">
+                <span class="badge-icono">✓</span>
+                <div class="badge-contenido">
+                    <span class="badge-etiqueta">Actualizado al</span>
+                    <span class="badge-fecha-texto">—</span>
+                </div>
+            </div>
 
 
             <!-- -----------------------------------------------
@@ -217,23 +238,6 @@
                     </button>
                 </div>
 
-                <!--
-                    Barra de ordenamiento condicional.
-                    Solo visible cuando el usuario ha realizado una búsqueda activa
-                    (por nombre/DNI o por libro específico). Se muestra/oculta desde JS
-                    mediante la clase 'visible'. En escritorio complementa la columna
-                    ordenable de la tabla; en móvil es la única forma de ordenar.
-                -->
-<!--                 <div id="barra-ordenamiento" class="barra-ordenamiento">
-                    <span>Ordenar por:</span>
-                    <button onclick="ordenarPorApellido()" class="btn-ordenar" id="btnOrdenApellido">
-                        Apellido ↕
-                    </button>
-                    <button onclick="ordenarPorFolio()" class="btn-ordenar" id="btnOrdenFolio">
-                        Folio ↕
-                    </button>
-                </div> -->
-
                 <!-- TABLA: visible en computadoras/tablets -->
                 <div class="tabla-envolvente">
                     <table class="tabla-datos">
@@ -250,9 +254,7 @@
                                     Apellido y Nombre <span id="iconoOrden">↕</span>
                                 </th>
                                 <th class="col-libro">Libro</th>
-                                <th onclick="ordenarPorFolio()" class="col-folio columna-ordenable" title="Clic para ordenar por número de folio">
-                                    Folio <span id="iconoOrdenFolio">↕</span>
-                                </th>
+                                <th class="col-folio">Folio</th>
                                 <th class="col-accion">Acción</th>
                             </tr>
                         </thead>

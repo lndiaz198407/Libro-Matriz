@@ -63,6 +63,17 @@ const API_KEY_GOOGLE = 'AIzaSyBau3ByRr-tdhfcAxGOeHIE3Bw4zggm5XQ';
  */
 const URL_CONSULTA = `https://sheets.googleapis.com/v4/spreadsheets/${ID_PLANILLA}/values/A2%3AG1000?key=${API_KEY_GOOGLE}`;
 
+/**
+ * URL para leer la celda H1 de la planilla, donde el AppScript escribe
+ * la fecha/hora de la última actualización al finalizar vincularTodosLosFolios().
+ * 
+ * H1 es una celda de "metadatos": no forma parte de los datos de alumnos
+ * (que empiezan en A2), sino que sirve como indicador de estado del sistema.
+ * 
+ * El rango H1%3AH1 es el equivalente codificado en URL de "H1:H1".
+ */
+const URL_FECHA_ACTUALIZACION = `https://sheets.googleapis.com/v4/spreadsheets/${ID_PLANILLA}/values/H1%3AH1?key=${API_KEY_GOOGLE}`;
+
 
 /* ============================================================================
    VARIABLES GLOBALES DE ESTADO
@@ -101,21 +112,6 @@ const REGISTROS_POR_PAGINA = 10;
  * @type {boolean}
  */
 let ordenAscendente = true;
-
-/**
- * Controla la dirección del ordenamiento por folio.
- * - true  → próximo clic ordenará ascendente (menor a mayor)
- * - false → próximo clic ordenará descendente (mayor a menor)
- * @type {boolean}
- */
-let ordenFolioAscendente = true;
-
-/**
- * Registra cuál fue el último criterio de ordenamiento aplicado.
- * Valores posibles: 'apellido' | 'folio' | null
- * @type {string|null}
- */
-let ultimoOrden = null;
 
 
 /* ============================================================================
@@ -181,11 +177,14 @@ function verificarAcceso() {
    
    1. Lee el texto del campo de búsqueda y el filtro de libro seleccionado.
    2. Muestra el indicador de carga.
-   3. Consulta la API de Google Sheets con fetch().
+   3. Consulta la API de Google Sheets con fetch() — en paralelo obtiene:
+      a) Los datos de alumnos (rango A2:G1000)
+      b) La fecha de última actualización (celda H1)
    4. Filtra los resultados que coincidan con la búsqueda Y el filtro de libro.
    5. Guarda los resultados en listaCompletaFiltrada.
    6. Reinicia la paginación a la página 1.
    7. Llama a actualizarVista() para renderizar los resultados.
+   8. Actualiza el badge de fecha en la cabecera con actualizarBadgeFecha().
    
    Esta función se llama desde:
    - El botón "Buscar" (onclick)
@@ -199,6 +198,7 @@ function verificarAcceso() {
    - Columna E (índice 4): Número de Folio
    - Columna F (índice 5): DNI del alumno
    - Columna G (índice 6): ID del archivo PDF en Google Drive
+   - Celda H1:            Fecha/hora de la última actualización del sistema
 ============================================================================ */
 function buscarEnSheets() {
     // --- 1. Leer los valores del formulario ---
@@ -208,34 +208,43 @@ function buscarEnSheets() {
     // --- 2. Mostrar spinner de carga mientras se espera la respuesta ---
     mostrarCarga(true);
 
-    // --- 3. Consultar la API de Google Sheets ---
     /**
-     * fetch() realiza una petición HTTP asincrónica.
-     * .then() encadena las acciones a realizar cuando la promesa se resuelve.
-     * .catch() captura cualquier error de red o de la API.
+     * --- 3. Consultar la API de Google Sheets EN PARALELO ---
+     * 
+     * Promise.all() ejecuta ambos fetch() al mismo tiempo (en paralelo),
+     * en lugar de hacerlos uno después del otro (secuencial).
+     * 
+     * Esto es más eficiente: el tiempo total de espera es el de la
+     * solicitud más lenta, NO la suma de ambas.
+     * 
+     * Promise.all recibe un array de Promesas y devuelve una nueva Promesa
+     * que se resuelve cuando TODAS las promesas del array se resuelven.
+     * El resultado es un array con las respuestas en el mismo orden.
      */
-    fetch(URL_CONSULTA)
-        .then(respuesta => {
-            // Convierte la respuesta HTTP en un objeto JavaScript
-            return respuesta.json();
-        })
-        .then(datos => {
-            // --- 4. Filtrar los datos recibidos ---
+    Promise.all([
+        fetch(URL_CONSULTA).then(r => r.json()),
+        fetch(URL_FECHA_ACTUALIZACION).then(r => r.json())
+    ])
+        .then(([datosAlumnos, datosFecha]) => {
+            // datosAlumnos → respuesta del rango A2:G1000
+            // datosFecha   → respuesta de la celda H1
+
+            // --- 4. Filtrar los datos de alumnos recibidos ---
             
             /**
-             * datos.values es un array de arrays (matriz bidimensional).
+             * datosAlumnos.values es un array de arrays (matriz bidimensional).
              * Cada elemento representa una fila de la planilla.
              * Ej: [["", "García Juan", "", "M1", "45", "30111222", "1abc..."]]
              */
-            if (!datos.values) {
+            if (!datosAlumnos.values) {
                 // Si la planilla está vacía o no tiene datos en el rango
                 listaCompletaFiltrada = [];
             } else {
-                listaCompletaFiltrada = datos.values.filter(fila => {
+                listaCompletaFiltrada = datosAlumnos.values.filter(fila => {
                     // Extraemos los valores de cada columna relevante
-                    const nombre = normalizar(fila[1]);                       // Col B: Nombre
-                    const dni = fila[5] ? fila[5].toString() : "";           // Col F: DNI
-                    const libro = (fila[3] || "").toUpperCase();             // Col D: Libro
+                    const nombre = normalizar(fila[1]);                   // Col B: Nombre
+                    const dni = fila[5] ? fila[5].toString() : "";       // Col F: DNI
+                    const libro = (fila[3] || "").toUpperCase();         // Col D: Libro
 
                     /**
                      * Doble condición de filtrado:
@@ -253,28 +262,26 @@ function buscarEnSheets() {
 
             // --- 5 y 6. Reiniciar página y renderizar resultados ---
             paginaActual = 1;
-            ultimoOrden = null; // Reinicia el estado de orden al hacer nueva búsqueda
-            actualizarEstadoBotoresOrden();
-            // Mostrar barra de ordenamiento si hay búsqueda activa (texto o libro específico)
-            const busquedaActiva = textoBusqueda.trim() !== '' || libroFiltro !== '';
-            const barraOrden = document.getElementById('barra-ordenamiento');
-            if (barraOrden) {
-                if (busquedaActiva && listaCompletaFiltrada.length > 1) {
-                    barraOrden.classList.add('visible');
-                } else {
-                    barraOrden.classList.remove('visible');
-                }
-            }
             actualizarVista();
+
+            // --- 7. Actualizar el badge de fecha con el valor leído de H1 ---
+            /**
+             * datosFecha.values tiene la forma: [["texto de H1"]]
+             * Es un array de filas, donde cada fila es un array de celdas.
+             * Por eso accedemos con [0][0] para llegar al valor de la celda H1.
+             */
+            const fechaTexto = datosFecha.values && datosFecha.values[0] && datosFecha.values[0][0]
+                ? datosFecha.values[0][0]
+                : null;
+            actualizarBadgeFecha(fechaTexto);
         })
         .catch(error => {
-            // Error de red o de la API: mostramos mensaje de error
+            // Error de red o de la API: mostramos mensaje de error en consola y alerta
             console.error("Error al consultar Google Sheets:", error);
             alert("❌ Hubo un error al conectar con la base de datos. Verificá tu conexión a internet.");
         })
         .finally(() => {
-            // Se ejecuta siempre al terminar, haya error o no
-            // Ocultamos el spinner de carga
+            // Se ejecuta siempre al terminar, haya error o no. Oculta el spinner.
             mostrarCarga(false);
         });
 }
@@ -300,96 +307,37 @@ function ordenarPorApellido() {
     // No hace nada si no hay datos para ordenar
     if (listaCompletaFiltrada.length === 0) return;
 
+    /**
+     * Array.sort() ordena el array IN PLACE (modifica el array original).
+     * La función comparadora recibe dos elementos (a, b) y debe retornar:
+     *  - número negativo si 'a' debe ir ANTES que 'b'
+     *  - número positivo si 'a' debe ir DESPUÉS que 'b'
+     *  - 0 si son iguales
+     * 
+     * Normalizamos ambos nombres antes de comparar para que la ñ, los
+     * acentos, etc. no interfieran con el orden correcto.
+     */
     listaCompletaFiltrada.sort((filaA, filaB) => {
-        const nombreA = normalizar(filaA[1]);
-        const nombreB = normalizar(filaB[1]);
+        const nombreA = normalizar(filaA[1]); // Nombre del alumno A
+        const nombreB = normalizar(filaB[1]); // Nombre del alumno B
 
         if (nombreA < nombreB) return ordenAscendente ? -1 : 1;
         if (nombreA > nombreB) return ordenAscendente ? 1 : -1;
-        return 0;
+        return 0; // Son iguales: no cambian de posición
     });
 
-    // Actualiza el ícono de la columna de la tabla
+    // Actualiza el ícono de la columna para mostrar la dirección del orden actual
     const iconoOrden = document.getElementById('iconoOrden');
     if (iconoOrden) {
         iconoOrden.innerText = ordenAscendente ? "▲" : "▼";
     }
 
-    // Actualiza el botón de la barra de ordenamiento
-    const btnApellido = document.getElementById('btnOrdenApellido');
-    if (btnApellido) {
-        btnApellido.textContent = `Apellido ${ordenAscendente ? '▲' : '▼'}`;
-    }
-
+    // Invierte el flag para que el próximo clic ordene en dirección contraria
     ordenAscendente = !ordenAscendente;
-    ultimoOrden = 'apellido';
-    actualizarEstadoBotoresOrden();
 
+    // Volvemos a la primera página para mostrar el inicio de la lista ordenada
     paginaActual = 1;
     actualizarVista();
-}
-
-
-/* ============================================================================
-   FUNCIÓN: ordenarPorFolio()
-   ============================================================================
-   Ordena numéricamente el array listaCompletaFiltrada por el campo
-   "Número de Folio" (columna E, índice 4 del array de cada fila).
-   
-   Alterna entre orden ascendente (menor a mayor) y descendente cada clic.
-   Actualiza el ícono de la columna en la tabla y el botón de la barra.
-============================================================================ */
-function ordenarPorFolio() {
-    if (listaCompletaFiltrada.length === 0) return;
-
-    listaCompletaFiltrada.sort((filaA, filaB) => {
-        // Convertimos a número para orden numérico correcto (no lexicográfico)
-        const folioA = parseFloat(filaA[4]) || 0;
-        const folioB = parseFloat(filaB[4]) || 0;
-
-        return ordenFolioAscendente ? folioA - folioB : folioB - folioA;
-    });
-
-    // Actualiza el ícono de la columna en la tabla de escritorio
-    const iconoFolio = document.getElementById('iconoOrdenFolio');
-    if (iconoFolio) {
-        iconoFolio.innerText = ordenFolioAscendente ? "▲" : "▼";
-    }
-
-    // Actualiza el botón en la barra de ordenamiento
-    const btnFolio = document.getElementById('btnOrdenFolio');
-    if (btnFolio) {
-        btnFolio.textContent = `Folio ${ordenFolioAscendente ? '▲' : '▼'}`;
-    }
-
-    ordenFolioAscendente = !ordenFolioAscendente;
-    ultimoOrden = 'folio';
-    actualizarEstadoBotoresOrden();
-
-    paginaActual = 1;
-    actualizarVista();
-}
-
-
-/* ============================================================================
-   FUNCIÓN: actualizarEstadoBotoresOrden()
-   ============================================================================
-   Marca visualmente con la clase 'activo' el botón de ordenamiento
-   que fue usado por última vez, y quita esa clase del otro.
-============================================================================ */
-function actualizarEstadoBotoresOrden() {
-    const btnApellido = document.getElementById('btnOrdenApellido');
-    const btnFolio    = document.getElementById('btnOrdenFolio');
-
-    if (btnApellido) btnApellido.classList.toggle('activo', ultimoOrden === 'apellido');
-    if (btnFolio)    btnFolio.classList.toggle('activo',    ultimoOrden === 'folio');
-
-    // Sincroniza también el ícono del encabezado de tabla cuando no se usó ese criterio
-    const iconoOrden = document.getElementById('iconoOrden');
-    if (iconoOrden && ultimoOrden !== 'apellido') iconoOrden.innerText = '↕';
-
-    const iconoFolio = document.getElementById('iconoOrdenFolio');
-    if (iconoFolio && ultimoOrden !== 'folio') iconoFolio.innerText = '↕';
 }
 
 
@@ -600,5 +548,39 @@ function mostrarCarga(mostrar) {
     } else {
         indicador.classList.remove('visible');
         indicador.classList.add('oculto');
+    }
+}
+
+
+/* ============================================================================
+   FUNCIÓN: actualizarBadgeFecha()
+   ============================================================================
+   Muestra u oculta el badge de "Actualizado al..." en la cabecera del sistema.
+   
+   El badge lee el valor de la celda H1 del Sheet, que es escrito automáticamente
+   por el AppScript (Code.gs) cada vez que se ejecuta vincularTodosLosFolios().
+   
+   Comportamiento:
+   - Si H1 tiene texto  → muestra el badge con ese texto como fecha.
+   - Si H1 está vacía   → oculta el badge completamente (no muestra nada).
+   
+   Esto permite que el badge refleje siempre exactamente lo que vos cargaste
+   en la celda, sin transformaciones ni formateos automáticos.
+   
+   @param {string|null} fechaTexto - El texto de la celda H1, o null si está vacía.
+============================================================================ */
+function actualizarBadgeFecha(fechaTexto) {
+    const badge = document.getElementById('badge-actualizacion');
+    if (!badge) return; // Salida segura si el elemento no existe en el HTML
+
+    if (fechaTexto) {
+        // H1 tiene contenido: actualizamos el texto del badge y lo hacemos visible
+        badge.querySelector('.badge-fecha-texto').textContent = fechaTexto;
+        badge.classList.remove('badge-oculto');
+        badge.classList.add('badge-visible');
+    } else {
+        // H1 está vacía: ocultamos el badge
+        badge.classList.remove('badge-visible');
+        badge.classList.add('badge-oculto');
     }
 }
