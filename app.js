@@ -61,7 +61,7 @@ const API_KEY_GOOGLE = 'AIzaSyBau3ByRr-tdhfcAxGOeHIE3Bw4zggm5XQ';
  * 
  * Template literals (backticks ``) permiten insertar variables con ${variable}.
  */
-const URL_CONSULTA = `https://sheets.googleapis.com/v4/spreadsheets/${ID_PLANILLA}/values/A2%3AG1000?key=${API_KEY_GOOGLE}`;
+const URL_CONSULTA = `https://sheets.googleapis.com/v4/spreadsheets/${ID_PLANILLA}/values/A2%3AG?key=${API_KEY_GOOGLE}`;
 
 /**
  * URL para leer la celda H1 de la planilla, donde el AppScript escribe

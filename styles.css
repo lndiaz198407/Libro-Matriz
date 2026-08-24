@@ -287,7 +287,7 @@ body {
 
 /* Logo pequeño en la cabecera del sistema (más pequeño que el del login) */
 .logo-cabecera {
-    height: 55px;
+    height: 95px;
     width: auto;
     /* Filtro para asegurarse de que el logo se vea bien sobre fondo oscuro */
     filter: brightness(1.1) drop-shadow(0 2px 6px rgba(0,0,0,0.2));
